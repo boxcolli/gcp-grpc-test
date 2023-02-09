@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+
+## Build
+FROM golang AS build
+
+WORKDIR /app
+
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+
+COPY main/* ./main/
+COPY pb/* ./pb/
+COPY pkg/* ./pkg/
+RUN go build -o / ./main/main.go
+
+## Deploy
+FROM gcr.io/distroless/base-debian11
+
+WORKDIR /
+
+COPY --from=build /main /main
+
+EXPOSE 8080
+
+USER nonroot:nonroot
+
+CMD [ "/main", "-grpc-addr", ":8080"]
